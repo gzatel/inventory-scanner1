@@ -3204,14 +3204,81 @@ async function loadData() {
         return;
       }
 
-      const confirmReplace =
-        confirm(
-          "Replace current inventory?"
-        );
+      try {
 
-      if (!confirmReplace) {
-        return;
-      }
+  const data =
+    await file.arrayBuffer();
+
+  const workbook =
+    XLSX.read(data);
+
+  const summarySheet =
+    workbook.Sheets["SUMMARY"];
+
+  let importedProject =
+    "";
+
+  let importedBoxes = 0;
+
+  let importedItems = 0;
+
+  if (summarySheet) {
+
+    importedProject =
+      summarySheet["B2"]?.v || "";
+
+    importedBoxes =
+      Number(
+        summarySheet["B4"]?.v
+      ) || 0;
+
+    importedItems =
+      Number(
+        summarySheet["B5"]?.v
+      ) || 0;
+  }
+
+  if (!importedBoxes) {
+
+    importedBoxes =
+      workbook.SheetNames
+        .filter(name =>
+          name.startsWith("BOX_")
+        )
+        .length;
+  }
+
+  const message =
+    "IMPORT EXCEL\n\n" +
+
+    `Project: ${
+      importedProject || "Unknown"
+    }\n` +
+
+    `Boxes: ${
+      importedBoxes
+    }\n` +
+
+    `Items: ${
+      importedItems
+    }\n\n` +
+
+    "This will replace the current inventory.\n\n" +
+
+    "Continue?";
+
+  const confirmReplace =
+    confirm(message);
+
+  if (!confirmReplace) {
+
+    event.target.value = "";
+
+    return;
+  }
+
+  // A partir de acá continúa
+  // tu código actual de importación
 
       try {
 
