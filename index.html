@@ -1083,6 +1083,9 @@
     let scannerRunning = false;
     let cameraTrack = null;
 
+    let scannerStopping = false;
+    let scannerRestartTimer = null;
+
     const SCANNER_CONFIG = {
       fps: 20,
       qrbox: 220
@@ -1801,237 +1804,238 @@ const qrConfig = {
 
 function startScanner() {
 
-  if (scannerStarting || scannerRunning) {
-    console.log("Scanner already starting/running");
+  // Evitar arranques simultáneos
+  if (
+    scannerStarting ||
+    scannerRunning ||
+    scannerStopping
+  ) {
     return;
   }
 
   scannerStarting = true;
 
-  const reader = document.getElementById("reader");
+  const reader =
+    document.getElementById("reader");
 
   if (!reader) {
-    console.error("Reader element not found");
     scannerStarting = false;
     return;
+  }
+
+  // Cancelar cualquier reinicio pendiente
+  if (scannerRestartTimer) {
+    clearTimeout(scannerRestartTimer);
+    scannerRestartTimer = null;
   }
 
   reader.innerHTML = "";
 
-  document.getElementById("status").innerHTML = `
-    <div style="
-      color:#555;
-      font-size:16px;
-      text-align:center;
-      margin-top:10px;
-    ">
-      Starting camera...
-    </div>
-  `;
-
   try {
 
-    html5QrCode = new Html5Qrcode(
-      "reader",
-      {
+    html5QrCode =
+      new Html5Qrcode("reader", {
         formatsToSupport: [
           Html5QrcodeSupportedFormats.QR_CODE
-        ],
-        verbose: true
-      }
-    );
+        ]
+      });
 
   } catch (err) {
 
-    console.error("Scanner creation error:", err);
+    console.error(
+      "Scanner creation error:",
+      err
+    );
 
-    scannerStarting = false;
     html5QrCode = null;
-
-    document.getElementById("status").innerHTML = `
-      <div style="
-        color:var(--danger);
-        font-size:18px;
-        font-weight:bold;
-        text-align:center;
-      ">
-        Scanner error
-      </div>
-    `;
+    scannerStarting = false;
 
     return;
   }
 
-  const config = {
+  Html5Qrcode.getCameras()
 
-    fps: 10,
+    .then(devices => {
 
-    qrbox: {
-      width: 220,
-      height: 220
-    },
+      if (
+        !devices ||
+        devices.length === 0
+      ) {
 
-    aspectRatio: 1.0
-
-  };
-
-  console.log("Starting rear camera...");
-
-  html5QrCode.start(
-
-    {
-      facingMode: "environment"
-    },
-
-    config,
-
-    decodedText => {
-
-      console.log("QR FOUND:", decodedText);
-
-      processQR(decodedText);
-
-    },
-
-    errorMessage => {
-
-      // Esto ocurre constantemente mientras busca QR.
-      // No mostrarlo en pantalla.
-      // console.log("QR scan:", errorMessage);
-
-    }
-
-  )
-
-  .then(() => {
-
-    console.log("CAMERA STARTED");
-
-    scannerStarting = false;
-    scannerRunning = true;
-
-    document.getElementById("status").innerHTML = `
-      <div style="
-        color:var(--success);
-        font-size:16px;
-        font-weight:bold;
-        text-align:center;
-      ">
-        Camera ready
-      </div>
-    `;
-
-    setTimeout(() => {
-
-      const video =
-        document.querySelector("#reader video");
-
-      if (!video) {
-
-        console.warn(
-          "Camera started but video element not found"
+        throw new Error(
+          "No cameras found"
         );
-
-        return;
       }
 
-      video.autoplay = true;
-      video.playsInline = true;
-      video.muted = true;
+      let cameraId =
+        devices[0].id;
 
-      video.setAttribute("autoplay", "");
-      video.setAttribute("playsinline", "");
-      video.setAttribute("muted", "");
+      // Buscar cámara trasera
+      const backCam =
+        devices.find(device => {
 
-      const stream = video.srcObject;
+          const label =
+            (device.label || "")
+              .toLowerCase();
 
-      if (stream) {
-
-        const tracks =
-          stream.getVideoTracks();
-
-        if (tracks.length > 0) {
-
-          cameraTrack = tracks[0];
-
-          console.log(
-            "Camera track:",
-            cameraTrack.getSettings()
+          return (
+            label.includes("back") ||
+            label.includes("rear") ||
+            label.includes("environment")
           );
 
-        }
+        });
 
+      if (backCam) {
+        cameraId = backCam.id;
       }
 
-    }, 500);
+      return html5QrCode.start(
 
-  })
+        cameraId,
 
-  .catch(err => {
+        {
+          fps: SCANNER_CONFIG.fps,
 
-    console.error(
-      "=============================="
-    );
+          qrbox: {
+            width: SCANNER_CONFIG.qrbox,
+            height: SCANNER_CONFIG.qrbox
+          },
 
-    console.error(
-      "CAMERA START ERROR:"
-    );
+          aspectRatio: 1.0
+        },
 
-    console.error(err);
+        processQR
 
-    console.error(
-      "=============================="
-    );
+      );
 
-    scannerStarting = false;
-    scannerRunning = false;
-    cameraTrack = null;
+    })
 
-    html5QrCode = null;
+    .then(() => {
 
-    reader.innerHTML = "";
+      scannerStarting = false;
+      scannerRunning = true;
+      scannerStopping = false;
 
-    let message =
-      "Could not start camera";
+      console.log(
+        "Camera ready"
+      );
 
-    if (err?.name) {
-      message += `<br><small>${escapeHTML(err.name)}</small>`;
-    }
+      setTimeout(() => {
 
-    if (err?.message) {
-      message += `<br><small>${escapeHTML(err.message)}</small>`;
-    }
+        const video =
+          document.querySelector(
+            "#reader video"
+          );
 
-    document.getElementById("status").innerHTML = `
-      <div style="
-        color:var(--danger);
-        font-size:18px;
-        font-weight:bold;
-        text-align:center;
-        margin-top:12px;
-      ">
-        ${message}
-      </div>
-    `;
+        if (!video) {
+          return;
+        }
 
-  });
+        video.autoplay = true;
+        video.playsInline = true;
+        video.muted = true;
+
+        video.setAttribute(
+          "autoplay",
+          "true"
+        );
+
+        video.setAttribute(
+          "playsinline",
+          "true"
+        );
+
+        video.setAttribute(
+          "muted",
+          "true"
+        );
+
+        const stream =
+          video.srcObject;
+
+        if (stream) {
+
+          const tracks =
+            stream.getVideoTracks();
+
+          if (tracks.length > 0) {
+
+            cameraTrack =
+              tracks[0];
+
+            console.log(
+              "Camera track ready"
+            );
+
+          }
+        }
+
+      }, 300);
+
+    })
+
+    .catch(err => {
+
+      console.error(
+        "Camera start error:",
+        err
+      );
+
+      scannerStarting = false;
+      scannerRunning = false;
+      scannerStopping = false;
+      cameraTrack = null;
+
+      html5QrCode = null;
+
+      reader.innerHTML = "";
+
+      document.getElementById(
+        "status"
+      ).innerHTML = `
+        <div style="
+          color:var(--danger);
+          font-size:18px;
+          font-weight:bold;
+          text-align:center;
+          margin-top:12px;
+        ">
+          Could not start camera
+        </div>
+      `;
+
+    });
 
 }
 
 async function stopScanner() {
 
+  if (scannerStopping) {
+    return;
+  }
+
+  scannerStopping = true;
   scannerStarting = false;
 
-  if (!html5QrCode) {
+  const scanner =
+    html5QrCode;
+
+  if (!scanner) {
+
     scannerRunning = false;
     cameraTrack = null;
+    scannerStopping = false;
+
     return;
   }
 
   try {
 
     if (scannerRunning) {
-      await html5QrCode.stop();
+
+      await scanner.stop();
+
     }
 
   } catch (err) {
@@ -2045,7 +2049,7 @@ async function stopScanner() {
 
   try {
 
-    await html5QrCode.clear();
+    await scanner.clear();
 
   } catch (err) {
 
@@ -2056,9 +2060,29 @@ async function stopScanner() {
 
   }
 
-  html5QrCode = null;
+  // Liberar cámara directamente si todavía existe
+  try {
+
+    if (cameraTrack) {
+      cameraTrack.stop();
+    }
+
+  } catch (err) {
+
+    console.error(
+      "Camera track stop error:",
+      err
+    );
+
+  }
+
+  if (html5QrCode === scanner) {
+    html5QrCode = null;
+  }
+
   scannerRunning = false;
   cameraTrack = null;
+  scannerStopping = false;
 
   const reader =
     document.getElementById("reader");
@@ -3570,7 +3594,7 @@ async function importExcel(event) {
 
   // Reset boxes
 
-  currentBoxNumber = 1;
+  currentBoxNumber = 1; 
 
   currentBox = "BOX_001";
 
@@ -3623,12 +3647,30 @@ document.addEventListener(
 
     if (document.hidden) {
 
+      if (scannerRestartTimer) {
+        clearTimeout(scannerRestartTimer);
+        scannerRestartTimer = null;
+      }
+
       await stopScanner();
 
-    } else {
-
-      setTimeout(startScanner, 300);
+      return;
     }
+
+
+    if (scannerRestartTimer) {
+      clearTimeout(scannerRestartTimer);
+    }
+
+    scannerRestartTimer =
+      setTimeout(() => {
+
+        scannerRestartTimer = null;
+
+        startScanner();
+
+      }, 500);
+
   }
 );
 
