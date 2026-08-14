@@ -337,33 +337,36 @@
     #topBar {
 
       position: sticky;
+
       top: 10px;
+
       z-index: 999;
 
-      background: #ffffffcc;
+      background: rgba(255,255,255,0.94);
+
       backdrop-filter: blur(10px);
 
       color: #1f2937;
 
       border-radius: 18px;
 
-      border: 1px solid #e5e7eb;;
+      border: 1px solid #ddd8ce;
 
       box-shadow:
-        0 10px 25px rgba(0,0,0,0.35);
+        0 6px 18px rgba(0,0,0,0.12);
 
       display: flex;
 
-        justify-content: space-between;
+      justify-content: space-between;
 
-        align-items: center;
+      align-items: center;
 
-        padding: 14px 16px;
+      padding: 10px 12px;
 
-        font-weight: bold;
+      margin-bottom: 14px;
 
-        margin-bottom: 14px;
-      }
+      min-height: 64px;
+    }
 
     .box-nav-button {
 
@@ -551,9 +554,31 @@
   style="
     cursor:pointer;
     user-select:none;
+    text-align:center;
+    line-height:1.1;
   "
 >
-  BOX_001 ▼
+  <div
+    id="boxNumberDisplay"
+    style="
+      font-size:20px;
+      font-weight:800;
+    "
+  >
+    BOX_001 ▼
+  </div>
+
+  <div
+    id="boxProjectDisplay"
+    style="
+      font-size:11px;
+      font-weight:normal;
+      color:#777;
+      margin-top:4px;
+    "
+  >
+    Inventory
+  </div>
 </div>
 
  <div
@@ -1133,9 +1158,13 @@ function setupProject() {
     document.getElementById("totalItems")
       .innerText = total;
 
-    document.getElementById("boxName")
+    document.getElementById("boxNumberDisplay")
       .innerText =
-      `${projectName} • ${currentBox} ▼`;
+      `${currentBox} ▼`;
+
+    document.getElementById("boxProjectDisplay")
+      .innerText =
+      projectName;
 
   }
   catch(err) {
