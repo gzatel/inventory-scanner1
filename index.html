@@ -429,6 +429,38 @@
       touch-action: manipulation;
     }
 
+    #cameraStatus {
+      width: min(92vw, 340px);
+      margin: 8px auto 12px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: bold;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+
+    #cameraStatus.starting {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    #cameraStatus.ready {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    #cameraStatus.error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    #cameraStatus.stopped {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+
     #topBar {
 
       position: sticky;
@@ -745,7 +777,11 @@
 
   <div id="reader"></div>
 
-  <div id="status"></div>
+  <div id="cameraStatus" class="starting">
+    🟡 Starting camera...
+  </div>
+
+<div id="status"></div>
 
   <div class="undo-wrapper">
 
@@ -1800,7 +1836,26 @@ const qrConfig = {
 };
 */
 
+function setCameraStatus(
+  state,
+  message
+) {
 
+  const element =
+    document.getElementById(
+      "cameraStatus"
+    );
+
+  if (!element) {
+    return;
+  }
+
+  element.className =
+    state;
+
+  element.innerText =
+    message;
+}
 
 function startScanner() {
 
@@ -1814,6 +1869,11 @@ function startScanner() {
   }
 
   scannerStarting = true;
+
+  setCameraStatus(
+    "starting",
+    "🟡 Starting camera..."
+  );
 
   const reader =
     document.getElementById("reader");
@@ -1921,6 +1981,11 @@ function startScanner() {
         "Camera ready"
       );
 
+      setCameraStatus(
+        "ready",
+        "🟢 Camera ready"
+      );
+
       setTimeout(() => {
 
         const video =
@@ -1980,6 +2045,11 @@ function startScanner() {
       console.error(
         "Camera start error:",
         err
+      );
+
+      setCameraStatus(
+        "error",
+        "🔴 Camera error"
       );
 
       scannerStarting = false;
@@ -2091,6 +2161,10 @@ async function stopScanner() {
     reader.innerHTML = "";
   }
 
+  setCameraStatus(
+    "stopped",
+    "⚪ Camera stopped"
+  );
 }
 
 // =========================
