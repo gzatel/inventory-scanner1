@@ -545,7 +545,7 @@
   color:#999;
   margin-top:5px;
   ">
-    V9.1
+    V10
   </div>
 
   <div id="status"></div>
@@ -596,6 +596,13 @@
         onclick="createNewBox()"
     >
       New Box
+    </button>
+
+    <button
+      class="download"
+      onclick="openAddProduct()"
+    >
+      Add Product
     </button>
 
     <button class="download" onclick="downloadExcel()">
@@ -701,6 +708,120 @@
     "
   >
     Normal
+  </div>
+
+</div>
+
+<div
+  id="addProductModal"
+  style="
+    display:none;
+
+    position:fixed;
+    inset:0;
+
+    background:rgba(0,0,0,0.55);
+
+    z-index:10000;
+
+    align-items:center;
+    justify-content:center;
+
+    padding:20px;
+  "
+>
+
+  <div
+    style="
+      width:100%;
+      max-width:400px;
+
+      background:var(--card);
+
+      border-radius:18px;
+
+      padding:20px;
+
+      box-shadow:
+        0 15px 40px rgba(0,0,0,0.35);
+    "
+  >
+
+    <h2 style="
+      margin-top:0;
+      text-align:center;
+    ">
+      Add Product
+    </h2>
+
+    <input
+      id="manualPartNumber"
+      type="text"
+      placeholder="Part Number"
+      style="
+        width:100%;
+        padding:14px;
+        margin-bottom:10px;
+        border-radius:10px;
+        font-size:16px;
+      "
+    >
+
+    <input
+      id="manualDetails"
+      type="text"
+      placeholder="Details"
+      style="
+        width:100%;
+        padding:14px;
+        margin-bottom:10px;
+        border-radius:10px;
+        font-size:16px;
+      "
+    >
+
+    <input
+      id="manualQuantity"
+      type="number"
+      min="1"
+      value="1"
+      placeholder="Quantity"
+      style="
+        width:100%;
+        padding:14px;
+        margin-bottom:15px;
+        border-radius:10px;
+        font-size:16px;
+      "
+    >
+
+    <div style="
+      display:flex;
+      gap:10px;
+    ">
+
+      <button
+        onclick="closeAddProduct()"
+        style="
+          background:var(--danger);
+          flex:1;
+        "
+      >
+        Cancel
+      </button>
+
+      <button
+        onclick="addManualProduct()"
+        style="
+          background:var(--success);
+          flex:1;
+        "
+      >
+        Add
+      </button>
+
+    </div>
+
   </div>
 
 </div>
@@ -954,6 +1075,134 @@ function setupProject() {
         </div>
       `;
   }
+}
+
+function openAddProduct() {
+
+  document.getElementById(
+    "addProductModal"
+  ).style.display = "flex";
+
+  document.getElementById(
+    "manualPartNumber"
+  ).value = "";
+
+  document.getElementById(
+    "manualDetails"
+  ).value = "";
+
+  document.getElementById(
+    "manualQuantity"
+  ).value = "1";
+
+  setTimeout(() => {
+
+    document.getElementById(
+      "manualPartNumber"
+    ).focus();
+
+  }, 100);
+}
+
+
+function closeAddProduct() {
+
+  document.getElementById(
+    "addProductModal"
+  ).style.display = "none";
+}
+
+
+function addManualProduct() {
+
+  const partNumber =
+    document.getElementById(
+      "manualPartNumber"
+    ).value.trim();
+
+  const nameEN =
+    document.getElementById(
+      "manualDetails"
+    ).value.trim();
+
+  const quantity =
+    parseInt(
+      document.getElementById(
+        "manualQuantity"
+      ).value
+    );
+
+  if (!partNumber) {
+
+    alert("Enter Part Number");
+
+    return;
+  }
+
+  if (!nameEN) {
+
+    alert("Enter Details");
+
+    return;
+  }
+
+  if (
+    isNaN(quantity) ||
+    quantity < 1
+  ) {
+
+    alert("Enter a valid quantity");
+
+    return;
+  }
+
+  const inventory =
+    boxes[currentBox] ||
+    (boxes[currentBox] = {});
+
+  const uniqueKey =
+    `${partNumber}|${nameEN}`;
+
+  if (inventory[uniqueKey]) {
+
+    inventory[uniqueKey].qty += quantity;
+
+  } else {
+
+    inventory[uniqueKey] = {
+
+      partNumber,
+      nameEN,
+      qty: quantity
+
+    };
+  }
+
+  renderTable();
+
+  saveData();
+
+  beep(true);
+
+  navigator.vibrate?.(80);
+
+  document.getElementById(
+    "status"
+  ).innerHTML = `
+    <div style="
+      font-size:20px;
+      font-weight:bold;
+      color:var(--success);
+    ">
+      Product Added
+    </div>
+
+    <div>
+      ${escapeHTML(partNumber)}
+    </div>
+  `;
+
+  closeAddProduct();
 }
 
 function createNewBox() {
@@ -1516,6 +1765,8 @@ function openInventoryDB() {
 
       inventoryDB =
         event.target.result;
+
+      console.log("IndexedDB ready");
 
       resolve(inventoryDB);
     };
