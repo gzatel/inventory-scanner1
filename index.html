@@ -104,6 +104,16 @@
       color: #111827;
     }
 
+    .empty-row td {
+
+      height: 52px;
+
+      background: #faf8f3;
+
+      border-bottom: 1px solid var(--border-soft);
+
+    }
+
     #searchResults div {
       color: #111827;
 
@@ -281,13 +291,15 @@
 
     th {
 
-      background: var(--primary);
+      background: #ded8cc;
 
-      color: white;
+      color: #4a453d;
 
       padding: 14px;
 
       text-align: left;
+
+      font-weight: bold;
     }
 
     td {
@@ -432,6 +444,32 @@
         0 6px 18px rgba(0,0,0,0.25);
     }
 
+    .clean-wrapper {
+
+      width: 100%;
+
+      display: flex;
+
+      justify-content: center;
+
+      margin-top: 12px;
+
+    }
+
+    .clean-button {
+
+      width: 100%;
+
+      min-height: 52px;
+
+      border-radius: 12px;
+
+      font-size: 16px;
+
+      background: var(--danger);
+
+    }
+
   </style>
 </head>
 
@@ -545,7 +583,7 @@
   color:#999;
   margin-top:5px;
   ">
-    V10
+    V11
   </div>
 
   <div id="status"></div>
@@ -591,37 +629,47 @@
 </div>
 
 <div class="buttons">
-    <button
-        class="download"
-        onclick="createNewBox()"
-    >
-      New Box
-    </button>
 
-    <button
-      class="download"
-      onclick="openAddProduct()"
-    >
-      Add Product
-    </button>
+  <button
+    class="download"
+    onclick="createNewBox()"
+  >
+    New Box
+  </button>
 
-    <button class="download" onclick="downloadExcel()">
-      Download Excel
-    </button>
+  <button
+    class="download"
+    onclick="openAddProduct()"
+  >
+    Add Product
+  </button>
 
-    <button
-      class="download"
-      onclick="document.getElementById('excelImport').click()"
-    >
-      Import Excel
-    </button>
+  <button
+    class="download"
+    onclick="downloadExcel()"
+  >
+    ↓
+  </button>
 
-    <button class="clear" onclick="clearData()">
-      Clean
-    </button>
+  <button
+    class="download"
+    onclick="document.getElementById('excelImport').click()"
+  >
+    ↑
+  </button>
 
+</div>
 
-  </div>
+<div class="clean-wrapper">
+
+  <button
+    class="clear clean-button"
+    onclick="clearData()"
+  >
+    Clean
+  </button>
+
+</div>
 
 
   <input
@@ -964,6 +1012,22 @@ function setupProject() {
 
     const inventory =
       boxes[currentBox] || {};
+
+    if (Object.keys(inventory).length === 0) {
+
+      tbody.innerHTML = `
+        <tr class="empty-row">
+
+          <td>&nbsp;</td>
+
+          <td>&nbsp;</td>
+
+          <td>&nbsp;</td>
+
+        </tr>
+      `;
+
+    }
 
     Object.values(inventory)
       .sort((a, b) =>
