@@ -1300,8 +1300,12 @@ function startScanner() {
 
     scannerStarting = true;
 
-    html5QrCode =
-      new Html5Qrcode("reader");
+  html5QrCode =
+    new Html5Qrcode("reader", {
+      formatsToSupport: [
+      Html5QrcodeSupportedFormats.QR_CODE
+      ]
+    });
 
   Html5Qrcode.getCameras()
     .then(devices => {
@@ -1322,22 +1326,22 @@ function startScanner() {
         cameraId = backCam.id;
       }
 
-      html5QrCode.start(
+html5QrCode.start(
   cameraId,
   {
-    fps: 10,
+    fps: 20,
 
     qrbox: {
-      width: 220,
-      height: 220
+      width: 180,
+      height: 180
     },
 
-    aspectRatio: 1,
+    disableFlip: true, 
 
     videoConstraints: {
       facingMode: "environment",
       width: { ideal: 1280 },
-      height: { ideal: 1280 }
+      height: { ideal: 720 }
     }
   },
   processQR
