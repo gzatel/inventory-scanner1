@@ -247,7 +247,9 @@
 
   border-radius: 18px;
 
-  transition: transform 0.15s ease;
+  display: block;
+
+  background: black;
 }
 
 #reader__scan_region {
@@ -256,6 +258,10 @@
   height: 100% !important;
 
   background: transparent !important;
+
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
 }
 
 #reader__dashboard {
@@ -421,12 +427,6 @@
 
     html {
       touch-action: manipulation;
-    }
-
-    #reader video {
-      width: 100%;
-      border-radius: 12px;
-      object-fit: cover;
     }
 
     #topBar {
@@ -827,16 +827,16 @@
 
   <button
     class="download"
-    onclick="downloadExcel()"
+    onclick="document.getElementById('excelImport').click()"
   >
-    ↓ Import
+    ↑ Export
   </button>
 
   <button
     class="download"
-    onclick="document.getElementById('excelImport').click()"
+    onclick="downloadExcel()"
   >
-    ↑ Export
+    ↓ Import
   </button>
 
 </div>
@@ -1079,8 +1079,9 @@
     let undoGroupDelay = 1200;
 
     let html5QrCode = null;
-
     let scannerStarting = false;
+    let scannerRunning = false;
+    let cameraTrack = null;
 
     const SCANNER_CONFIG = {
       fps: 20,
@@ -1800,162 +1801,248 @@ const qrConfig = {
 
 function startScanner() {
 
-   if (
-      html5QrCode ||
-      scannerStarting
-    ) {
-      return;
-    }
+  if (scannerStarting || scannerRunning) {
+    return;
+  }
 
-    scannerStarting = true;
+  scannerStarting = true;
 
-  html5QrCode =
-    new Html5Qrcode("reader", {
-      formatsToSupport: [
-      Html5QrcodeSupportedFormats.QR_CODE
-      ]
-    });
+  const reader =
+    document.getElementById("reader");
+
+  if (!reader) {
+    scannerStarting = false;
+    return;
+  }
+
+  // Limpiar cualquier resto visual anterior
+  reader.innerHTML = "";
+
+  try {
+
+    html5QrCode =
+      new Html5Qrcode("reader", {
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.QR_CODE
+        ]
+      });
+
+  } catch (err) {
+
+    console.error(
+      "Scanner creation error:",
+      err
+    );
+
+    html5QrCode = null;
+    scannerStarting = false;
+
+    return;
+  }
 
   Html5Qrcode.getCameras()
+
     .then(devices => {
 
       if (!devices || devices.length === 0) {
-        console.error("No cameras found");
-        return;
+
+        throw new Error(
+          "No cameras found"
+        );
       }
 
-      let cameraId = devices[0].id;
+      let cameraId =
+        devices[0].id;
 
-      const backCam = devices.find(d =>
-        (d.label || "").toLowerCase().includes("back") ||
-        (d.label || "").toLowerCase().includes("rear")
-      );
+      // Intentar seleccionar cámara trasera
+      const backCam =
+        devices.find(device => {
+
+          const label =
+            (device.label || "")
+              .toLowerCase();
+
+          return (
+            label.includes("back") ||
+            label.includes("rear") ||
+            label.includes("environment")
+          );
+
+        });
 
       if (backCam) {
         cameraId = backCam.id;
       }
 
-html5QrCode.start(
-  cameraId,
-  {
-    fps: SCANNER_CONFIG.fps,
+      return html5QrCode.start(
 
-    qrbox: {
-      width: SCANNER_CONFIG.qrbox,
-      height: SCANNER_CONFIG.qrbox
-    }
-  },
-  processQR
-)
-.then(() => {
+        cameraId,
 
-  scannerStarting = false;
+        {
+          fps: SCANNER_CONFIG.fps,
 
-  console.log("Camera started");
+          qrbox: {
+            width: SCANNER_CONFIG.qrbox,
+            height: SCANNER_CONFIG.qrbox
+          },
 
-  setTimeout(() => {
+          aspectRatio: 1.0
+        },
 
-    const video =
-      document.querySelector("#reader video");
+        processQR
 
-    if (video) {
-
-      video.setAttribute(
-        "playsinline",
-        true
       );
-
-      video.setAttribute(
-        "muted",
-        true
-      );
-
-      video.muted = true;
-
-      const stream = video.srcObject;
-
-      if (stream) {
-
-        const tracks =
-          stream.getVideoTracks();
-
-        if (tracks.length > 0) {
-
-          cameraTrack = tracks[0];
-
-          console.log(
-            "Camera track ready"
-          );
-
-          console.log(
-            "Camera capabilities:",
-            cameraTrack.getCapabilities()
-          );
-
-          console.log(
-            "Camera settings:",
-            cameraTrack.getSettings()
-          );
-
-        }
-      }
-    }
-
-  }, 800);
-
-})
-.catch(err => {
-
-  scannerStarting = false;
-
-  html5QrCode = null;
-
-  console.error(
-    "Camera start error:",
-    err
-  );
-
-  document.getElementById(
-    "status"
-  ).innerHTML = `
-    <div style="
-      color:var(--danger);
-      font-size:18px;
-      font-weight:bold;
-      text-align:center;
-      margin-top:12px;
-    ">
-      Camera permission denied
-    </div>
-  `;
-});
 
     })
+
+    .then(() => {
+
+      scannerStarting = false;
+      scannerRunning = true;
+
+      console.log(
+        "Camera started successfully"
+      );
+
+      // Esperar a que html5-qrcode cree el video
+      setTimeout(() => {
+
+        const video =
+          document.querySelector(
+            "#reader video"
+          );
+
+        if (!video) {
+          return;
+        }
+
+        video.setAttribute(
+          "autoplay",
+          "true"
+        );
+
+        video.setAttribute(
+          "playsinline",
+          "true"
+        );
+
+        video.setAttribute(
+          "muted",
+          "true"
+        );
+
+        video.autoplay = true;
+        video.playsInline = true;
+        video.muted = true;
+
+        const stream =
+          video.srcObject;
+
+        if (stream) {
+
+          const tracks =
+            stream.getVideoTracks();
+
+          if (tracks.length > 0) {
+
+            cameraTrack =
+              tracks[0];
+
+            console.log(
+              "Camera track ready"
+            );
+
+          }
+        }
+
+      }, 500);
+
+    })
+
     .catch(err => {
-      console.error("Camera access error:", err);
+
+      console.error(
+        "Camera start error:",
+        err
+      );
+
+      scannerStarting = false;
+      scannerRunning = false;
+      cameraTrack = null;
+
+      html5QrCode = null;
+
+      reader.innerHTML = "";
+
+      document.getElementById(
+        "status"
+      ).innerHTML = `
+        <div style="
+          color:var(--danger);
+          font-size:18px;
+          font-weight:bold;
+          text-align:center;
+          margin-top:12px;
+        ">
+          Could not start camera
+        </div>
+      `;
+
     });
+
 }
 
 
-  async function stopScanner() {
+async function stopScanner() {
 
-    if (!html5QrCode) {
-      return;
-    }
+  scannerStarting = false;
 
-    try {
-
-      await html5QrCode.stop();
-      await html5QrCode.clear();
-
-    } catch(err) {
-
-      console.error(err);
-
-    }
-
-    html5QrCode = null;
+  if (!html5QrCode) {
+    scannerRunning = false;
+    cameraTrack = null;
+    return;
   }
+
+  try {
+
+    if (scannerRunning) {
+      await html5QrCode.stop();
+    }
+
+  } catch (err) {
+
+    console.error(
+      "Scanner stop error:",
+      err
+    );
+
+  }
+
+  try {
+
+    await html5QrCode.clear();
+
+  } catch (err) {
+
+    console.error(
+      "Scanner clear error:",
+      err
+    );
+
+  }
+
+  html5QrCode = null;
+  scannerRunning = false;
+  cameraTrack = null;
+
+  const reader =
+    document.getElementById("reader");
+
+  if (reader) {
+    reader.innerHTML = "";
+  }
+
+}
 
 // =========================
 // INDEXEDDB STORAGE
