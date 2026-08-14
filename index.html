@@ -545,7 +545,7 @@
   color:#999;
   margin-top:5px;
   ">
-    V9
+    V9.1
   </div>
 
   <div id="status"></div>
@@ -736,6 +736,8 @@
       fps: 20,
       qrbox: 220
     };
+
+    
 
 
     // =========================
@@ -1482,6 +1484,49 @@ html5QrCode.start(
     html5QrCode = null;
   }
 
+// =========================
+// INDEXEDDB STORAGE
+// =========================
+
+const DB_NAME = "InventoryScannerDB";
+const DB_VERSION = 1;
+const DB_STORE = "appData";
+const DB_KEY = "inventory";
+
+let inventoryDB = null;
+
+function openInventoryDB() {
+
+  return new Promise((resolve, reject) => {
+
+    const request =
+      indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onupgradeneeded = event => {
+
+      const db = event.target.result;
+
+      if (!db.objectStoreNames.contains(DB_STORE)) {
+
+        db.createObjectStore(DB_STORE);
+      }
+    };
+
+    request.onsuccess = event => {
+
+      inventoryDB =
+        event.target.result;
+
+      resolve(inventoryDB);
+    };
+
+    request.onerror = () => {
+
+      reject(request.error);
+    };
+
+  });
+}
 
 async function initializeApp() {
 
@@ -1767,51 +1812,6 @@ function loadDataFromIndexedDB() {
       resolve(
         request.result || null
       );
-    };
-
-    request.onerror = () => {
-
-      reject(request.error);
-    };
-
-  });
-}
-
-
-// =========================
-// INDEXEDDB STORAGE
-// =========================
-
-const DB_NAME = "InventoryScannerDB";
-const DB_VERSION = 1;
-const DB_STORE = "appData";
-const DB_KEY = "inventory";
-
-let inventoryDB = null;
-
-function openInventoryDB() {
-
-  return new Promise((resolve, reject) => {
-
-    const request =
-      indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onupgradeneeded = event => {
-
-      const db = event.target.result;
-
-      if (!db.objectStoreNames.contains(DB_STORE)) {
-
-        db.createObjectStore(DB_STORE);
-      }
-    };
-
-    request.onsuccess = event => {
-
-      inventoryDB =
-        event.target.result;
-
-      resolve(inventoryDB);
     };
 
     request.onerror = () => {
