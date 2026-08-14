@@ -545,7 +545,7 @@
   color:#999;
   margin-top:5px;
   ">
-    V8
+    V9
   </div>
 
   <div id="status"></div>
@@ -1483,15 +1483,20 @@ html5QrCode.start(
   }
 
 
-loadData();
+async function initializeApp() {
 
-if (!boxes[currentBox]) {
-  boxes[currentBox] = {};
+  await loadData();
+
+  if (!boxes[currentBox]) {
+    boxes[currentBox] = {};
+  }
+
+  setScanMode(scanDelay);
+
+  renderTable();
 }
 
-setScanMode(scanDelay);
-
-renderTable();
+initializeApp();
 
 window.addEventListener("load", () => {
 
@@ -1703,12 +1708,126 @@ window.addEventListener("load", () => {
     });
 }
 
+function saveDataToIndexedDB(data) {
+
+  if (!inventoryDB) {
+    return Promise.reject(
+      new Error("IndexedDB not initialized")
+    );
+  }
+
+  return new Promise((resolve, reject) => {
+
+    const transaction =
+      inventoryDB.transaction(
+        DB_STORE,
+        "readwrite"
+      );
+
+    const store =
+      transaction.objectStore(DB_STORE);
+
+    const request =
+      store.put(data, DB_KEY);
+
+    request.onsuccess = () => {
+      resolve();
+    };
+
+    request.onerror = () => {
+      reject(request.error);
+    };
+
+  });
+}
+
+
+function loadDataFromIndexedDB() {
+
+  if (!inventoryDB) {
+    return Promise.resolve(null);
+  }
+
+  return new Promise((resolve, reject) => {
+
+    const transaction =
+      inventoryDB.transaction(
+        DB_STORE,
+        "readonly"
+      );
+
+    const store =
+      transaction.objectStore(DB_STORE);
+
+    const request =
+      store.get(DB_KEY);
+
+    request.onsuccess = () => {
+
+      resolve(
+        request.result || null
+      );
+    };
+
+    request.onerror = () => {
+
+      reject(request.error);
+    };
+
+  });
+}
+
+
+// =========================
+// INDEXEDDB STORAGE
+// =========================
+
+const DB_NAME = "InventoryScannerDB";
+const DB_VERSION = 1;
+const DB_STORE = "appData";
+const DB_KEY = "inventory";
+
+let inventoryDB = null;
+
+function openInventoryDB() {
+
+  return new Promise((resolve, reject) => {
+
+    const request =
+      indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onupgradeneeded = event => {
+
+      const db = event.target.result;
+
+      if (!db.objectStoreNames.contains(DB_STORE)) {
+
+        db.createObjectStore(DB_STORE);
+      }
+    };
+
+    request.onsuccess = event => {
+
+      inventoryDB =
+        event.target.result;
+
+      resolve(inventoryDB);
+    };
+
+    request.onerror = () => {
+
+      reject(request.error);
+    };
+
+  });
+}
+
 
     // =========================
     // LOCAL SAVE
     // =========================
 
-    function saveData() {
+ function saveData() {
 
   try {
 
@@ -1721,10 +1840,24 @@ window.addEventListener("load", () => {
       scanHistory
     };
 
+    // Respaldo temporal en localStorage
     localStorage.setItem(
       "qrInventoryData",
       JSON.stringify(data)
     );
+
+    // Almacenamiento principal
+    if (inventoryDB) {
+
+      saveDataToIndexedDB(data)
+        .catch(err => {
+          console.error(
+            "IndexedDB save error:",
+            err
+          );
+        });
+
+    }
 
   }
   catch(err) {
@@ -1752,22 +1885,44 @@ function scheduleSaveData() {
   }, 500);
 }
 
-function loadData() {
-
-  const saved =
-    localStorage.getItem("qrInventoryData");
-
-  if (!saved) {
-    return;
-  }
+async function loadData() {
 
   try {
 
-    const data =
-      JSON.parse(saved);
+    await openInventoryDB();
+
+    const dataFromDB =
+      await loadDataFromIndexedDB();
+
+    let data = dataFromDB;
+
+    if (!data) {
+
+      const saved =
+        localStorage.getItem(
+          "qrInventoryData"
+        );
+
+      if (saved) {
+
+        try {
+          data = JSON.parse(saved);
+        }
+        catch(err) {
+          console.error(
+            "Invalid localStorage data:",
+            err
+          );
+        }
+      }
+    }
+
+    if (!data) {
+      return;
+    }
 
     projectName =
-  data.projectName || "";
+      data.projectName || "";
 
     currentBoxNumber =
       data.currentBoxNumber || 1;
@@ -1784,20 +1939,81 @@ function loadData() {
       data.boxes || {}
     );
 
-    scanDelay = data.scanDelay ?? 800;
+    scanDelay =
+      data.scanDelay ?? 800;
 
     scanHistory =
       Array.isArray(data.scanHistory)
         ? data.scanHistory
         : [];
 
+    // Migración localStorage → IndexedDB
+    if (!dataFromDB) {
+
+      await saveDataToIndexedDB(data);
+
+      console.log(
+        "Inventory migrated to IndexedDB"
+      );
+    }
+
   }
   catch(err) {
 
     console.error(
-      "Error loading saved data",
+      "IndexedDB load error:",
       err
     );
+
+    // Fallback a localStorage
+    const saved =
+      localStorage.getItem(
+        "qrInventoryData"
+      );
+
+    if (!saved) {
+      return;
+    }
+
+    try {
+
+      const data =
+        JSON.parse(saved);
+
+      projectName =
+        data.projectName || "";
+
+      currentBoxNumber =
+        data.currentBoxNumber || 1;
+
+      currentBox =
+        data.currentBox || "BOX_001";
+
+      Object.keys(boxes).forEach(key => {
+        delete boxes[key];
+      });
+
+      Object.assign(
+        boxes,
+        data.boxes || {}
+      );
+
+      scanDelay =
+        data.scanDelay ?? 800;
+
+      scanHistory =
+        Array.isArray(data.scanHistory)
+          ? data.scanHistory
+          : [];
+
+    }
+    catch(loadErr) {
+
+      console.error(
+        "Fallback load error:",
+        loadErr
+      );
+    }
   }
 }
 
