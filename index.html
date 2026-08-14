@@ -539,6 +539,16 @@
 
   <div id="reader"></div>
 
+  <div id="scannerVersion"
+     style="
+       text-align:center;
+       font-size:12px;
+       color:#888;
+       margin-top:8px;
+     ">
+     V1
+  </div>
+
   <div id="status"></div>
 
   <div class="undo-wrapper">
@@ -722,6 +732,11 @@
     let html5QrCode = null;
 
     let scannerStarting = false;
+
+    const SCANNER_CONFIG = {
+      fps: 10,
+      qrbox: 250
+    };
 
 
     // =========================
@@ -1329,11 +1344,11 @@ function startScanner() {
 html5QrCode.start(
   cameraId,
   {
-    fps: 15,
+    fps: SCANNER_CONFIG.fps,
 
     qrbox: {
-      width: 250,
-      height: 250
+      width: SCANNER_CONFIG.qrbox,
+      height: SCANNER_CONFIG.qrbox
     }
   },
   processQR
