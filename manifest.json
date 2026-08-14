@@ -6,7 +6,7 @@
   "display": "standalone",
   "display_override": ["standalone"],
   "background_color": "#ffffff",
-  "theme_color": "##EC270C",
+  "theme_color": "#EC270C",
   "orientation": "portrait",
   "icons": [
     {
