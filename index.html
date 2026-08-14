@@ -1329,19 +1329,11 @@ function startScanner() {
 html5QrCode.start(
   cameraId,
   {
-    fps: 20,
+    fps: 10,
 
     qrbox: {
-      width: 180,
-      height: 180
-    },
-
-    disableFlip: true, 
-
-    videoConstraints: {
-      facingMode: "environment",
-      width: { ideal: 1280 },
-      height: { ideal: 720 }
+      width: 250,
+      height: 250
     }
   },
   processQR
