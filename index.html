@@ -549,35 +549,36 @@
   </button>
 
   <div
-  id="boxName"
-  onclick="toggleBoxList()"
-  style="
-    cursor:pointer;
-    user-select:none;
-    text-align:center;
-    line-height:1.1;
-  "
->
+    id="boxName"
+    onclick="toggleBoxList()"
+    style="
+      cursor:pointer;
+      user-select:none;
+      text-align:center;
+      line-height:1.1;
+    "
+  >
+  <div
+    id="boxProjectDisplay"
+    style="
+      font-size:12px;
+      font-weight:normal;
+      color:#777;
+      margin-bottom:4px;
+    "
+  >
+    Inventory
+  </div>
+
   <div
     id="boxNumberDisplay"
     style="
       font-size:20px;
       font-weight:800;
+      color:#302b45;
     "
   >
-    BOX_001 ▼
-  </div>
-
-  <div
-    id="boxProjectDisplay"
-    style="
-      font-size:11px;
-      font-weight:normal;
-      color:#777;
-      margin-top:4px;
-    "
-  >
-    Inventory
+    BOX_01 ▼
   </div>
 </div>
 
@@ -922,7 +923,7 @@
     let currentBoxNumber = 1;
 
     let currentBox =
-        `BOX_${String(currentBoxNumber).padStart(3, "0")}`;
+        `BOX_${String(currentBoxNumber).padStart(2, "0")}`;
 
     let searchTerm = "";
     let projectName = "";
@@ -1330,7 +1331,7 @@ function createNewBox() {
 
   currentBox =
     `BOX_${String(currentBoxNumber)
-      .padStart(3, "0")}`;
+      .padStart(2, "0")}`;
 
   boxes[currentBox] = {};
 
@@ -1352,7 +1353,7 @@ function previousBox() {
 
   currentBox =
     `BOX_${String(currentBoxNumber)
-      .padStart(3, "0")}`;
+      .padStart(2, "0")}`;
 
   renderTable();
   saveData();
@@ -1365,7 +1366,7 @@ function nextBox() {
 
   const nextBoxName =
     `BOX_${String(next)
-      .padStart(3, "0")}`;
+      .padStart(2, "0")}`;
 
   if (!boxes[nextBoxName]) {
     return;
