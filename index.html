@@ -1870,6 +1870,13 @@ function startScanner() {
 
   scannerStarting = true;
 
+  const cameraStatus =
+    document.getElementById("cameraStatus");
+
+  if (cameraStatus) {
+    cameraStatus.style.display = "";
+  }
+
   setCameraStatus(
     "starting",
     "🟡 Starting camera..."
@@ -1985,6 +1992,17 @@ function startScanner() {
         "ready",
         "🟢 Camera ready"
       );
+
+      setTimeout(() => {
+
+            const cameraStatus =
+              document.getElementById("cameraStatus");
+
+            if (cameraStatus) {
+              cameraStatus.style.display = "none";
+            }
+
+      }   , 5000);
 
       setTimeout(() => {
 
