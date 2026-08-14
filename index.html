@@ -114,6 +114,82 @@
 
     }
 
+    .qty-controls {
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      gap: 8px;
+    }
+
+    .qty-button {
+
+      width: 36px;
+
+      height: 36px;
+
+      min-width: 36px;
+
+      padding: 0;
+
+      border-radius: 10px;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      font-size: 21px;
+
+      font-weight: normal;
+
+      box-shadow: none;
+
+      transition:
+        transform 0.1s ease,
+        filter 0.1s ease;
+    }
+
+    .qty-button:active {
+
+      transform: scale(0.92);
+
+    }
+
+    .qty-minus {
+
+      background: #f4d8d6;
+
+      color: #a52b27;
+
+    }
+
+    .qty-plus {
+
+      background: #d8ead8;
+
+      color: #27652c;
+
+    }
+
+    .qty-number {
+
+      min-width: 32px;
+
+      text-align: center;
+
+      font-size: 20px;
+
+      font-weight: 800;
+
+      color: #302b45;
+
+    }
+
     #searchResults div {
       color: #111827;
 
@@ -293,17 +369,33 @@
 
       color: #4a453d;
 
-      padding: 14px;
+      padding: 13px 12px;
 
       text-align: left;
 
-      font-weight: bold;
+      font-size: 13px;
+
+      font-weight: 700;
+
+      letter-spacing: 0.3px;
     }
 
     td {
+
       padding: 12px;
-      border-bottom: 1px solid var(--border-soft);
+
+      border-bottom: 1px solid #e7e1d7;
+
       font-size: 14px;
+
+      background: #fffdf8;
+    }
+
+    td:first-child {
+
+      font-weight: 700;
+
+      color: #302b45;
     }
 
     th:nth-child(3),
@@ -312,14 +404,19 @@
       width: 140px;
     }
 
-    tr:nth-child(even) {
-      background: var(--row-alt);
+    tr:nth-child(even) td {
+      background: #f8f4ec;
     }
 
     .qty {
+
       font-weight: bold;
+
       font-size: 18px;
+
       text-align: center;
+
+      white-space: nowrap;
     }
 
     html {
@@ -1140,55 +1237,30 @@ function setupProject() {
 
           <td class="qty">
 
-            <div style="
-              display:flex;
-              align-items:center;
-              justify-content:center;
-              gap:10px;
-            ">
+            <div class="qty-controls">
 
-              <button
-                onclick="decreaseQty('${safeKey}')"
-                style="
-                  background:var(--danger);
-                  width:40px;
-                  height:40px;
-                  border-radius:50%;
-                  font-size:24px;
-                  padding:0;
-                "
-              >
-                -
-              </button>
+          <button
+            class="qty-button qty-minus"
+            onclick="decreaseQty('${safeKey}')"
+          >
+            −
+          </button>
 
-              <div
-                onclick="editQty('${safeKey}')"
-                style="
-                  min-width:40px;
-                  text-align:center;
-                  font-size:22px;
-                  font-weight:bold;
-                  cursor:pointer;
-                "
-              >
-                ${item.qty}
-              </div>
+          <div
+            class="qty-number"
+            onclick="editQty('${safeKey}')"
+          >
+            ${item.qty}
+          </div>
 
-              <button
-                onclick="increaseQty('${safeKey}')"
-                style="
-                  background:var(--success-dark);
-                  width:40px;
-                  height:40px;
-                  border-radius:50%;
-                  font-size:24px;
-                  padding:0;
-                "
-              >
-                +
-              </button>
+          <button
+            class="qty-button qty-plus"
+            onclick="increaseQty('${safeKey}')"
+          >
+            +
+          </button>
 
-            </div>
+        </div>
 
           </td>
 
