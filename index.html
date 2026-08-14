@@ -545,7 +545,7 @@
   color:#999;
   margin-top:5px;
   ">
-    V7
+    V8
   </div>
 
   <div id="status"></div>
@@ -1036,6 +1036,14 @@ function increaseQty(encodedKey) {
 
   inventory[key].qty++;
 
+  scanHistory =
+    scanHistory.filter(scan =>
+      !(
+        scan.key === key &&
+        scan.box === currentBox
+      )
+    );
+
   renderTable();
 
   saveData();
@@ -1102,6 +1110,14 @@ function editQty(encodedKey) {
   }
 
   inventory[key].qty = qty;
+
+  scanHistory =
+    scanHistory.filter(scan =>
+      !(
+        scan.key === key &&
+        scan.box === currentBox
+      )
+    );
 
   renderTable();
 
@@ -1198,10 +1214,14 @@ function editQty(encodedKey) {
 
         inventory[uniqueKey].qty++;
 
+        const previousQty =
+          inventory[uniqueKey].qty - 1;
+
         scanHistory.push({
           key: uniqueKey,
           box: currentBox,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          previousQty
         });
 
 if (scanHistory.length > 200) {
@@ -1392,6 +1412,16 @@ html5QrCode.start(
             "Camera track ready"
           );
 
+          console.log(
+            "Camera capabilities:",
+            cameraTrack.getCapabilities()
+          );
+
+          console.log(
+            "Camera settings:",
+            cameraTrack.getSettings()
+          );
+
         }
       }
     }
@@ -1487,29 +1517,29 @@ window.addEventListener("load", () => {
     return;
   }
 
-  group.forEach(scan => {
+  [...group].reverse().forEach(scan => {
 
-    const inventory =
-      boxes[scan.box];
+  const inventory =
+    boxes[scan.box];
 
-    if (!inventory) {
-      return;
-    }
+  if (!inventory) {
+    return;
+  }
+
+  if (scan.previousQty <= 0) {
+
+    delete inventory[scan.key];
+
+  } else {
 
     const item =
       inventory[scan.key];
 
-    if (!item) {
-      return;
+    if (item) {
+      item.qty = scan.previousQty;
     }
-
-    item.qty--;
-
-    if (item.qty <= 0) {
-
-      delete inventory[scan.key];
-    }
-  });
+  }
+});
 
   const last =
     group[group.length - 1];
@@ -1687,7 +1717,8 @@ window.addEventListener("load", () => {
       currentBoxNumber,
       currentBox,
       scanDelay,
-      boxes
+      boxes,
+      scanHistory
     };
 
     localStorage.setItem(
@@ -1755,6 +1786,10 @@ function loadData() {
 
     scanDelay = data.scanDelay ?? 800;
 
+    scanHistory =
+      Array.isArray(data.scanHistory)
+        ? data.scanHistory
+        : [];
 
   }
   catch(err) {
