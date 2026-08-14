@@ -545,7 +545,7 @@
   color:#999;
   margin-top:5px;
   ">
-    V6
+    V7
   </div>
 
   <div id="status"></div>
@@ -1227,7 +1227,7 @@ if (scanHistory.length > 200) {
 
         renderTable();
 
-        saveData();
+        scheduleSaveData();
 
         setTimeout(() => {
 
@@ -1709,7 +1709,19 @@ window.addEventListener("load", () => {
   }
 }
 
-    function loadData() {
+let saveTimer = null;
+
+function scheduleSaveData() {
+
+  clearTimeout(saveTimer);
+
+  saveTimer = setTimeout(() => {
+    saveData();
+    saveTimer = null;
+  }, 500);
+}
+
+function loadData() {
 
   const saved =
     localStorage.getItem("qrInventoryData");
